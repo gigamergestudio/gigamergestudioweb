@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>GigaMerge Studio — The Creative Talent Ecosystem</title>
+  <!-- Fonts & Libraries -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- GSAP + ScrollTrigger + Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Space Grotesk', sans-serif;
+      background: #0a0a0f;
+      color: #ededee;
+      overflow-x: hidden;
+      transition: background 0.5s ease;
+    }
+
+    /* Custom Cursor */
+    .cursor {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #00f7ff;
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.1s, width 0.2s, height 0.2s;
+      transform: translate(-50%, -50%);
+      backdrop-filter: invert(1);
+      mix-blend-mode: difference;
+    }
+    .cursor-follower {
+      width: 8px;
+      height: 8px;
+      background: #00f7ff;
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.15s;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Smooth scroll */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Loader */
+    .loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      transition: opacity 1s ease;
+      opacity: 1;
+    }
+    .loader-content {
+      text-align: center;
+    }
+    .loader-text {
+      font-size: 2rem;
+      letter-spacing: 8px;
+      font-weight: 600;
+      background: linear-gradient(45deg, #00f7ff, #a855f7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    /* Canvas 3D background */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    /* Sections */
+    section {
+      position: relative;
+      z-index: 2;
+      padding: 100px 5%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Glassmorphic cards */
+    .glass-card {
+      background: rgba(20, 20, 30, 0.5);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 247, 255, 0.2);
+      border-radius: 32px;
+      transition: all 0.4s ease;
+      overflow: hidden;
+    }
+    .glass-card:hover {
+      border-color: #00f7ff;
+      box-shadow: 0 0 30px rgba(0, 247, 255, 0.2);
+      transform: translateY(-8px);
+    }
+
+    /* Typography */
+    h1, h2, h3 {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    h1 {
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      background: linear-gradient(135deg, #fff, #00f7ff, #a855f7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      margin-bottom: 2rem;
+      position: relative;
+      display: inline-block;
+    }
+    h2::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #00f7ff, #a855f7);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #00f7ff, #a855f7);
+      border: none;
+      padding: 14px 36px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #0a0a0f;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 5px 15px rgba(0,247,255,0.3);
+    }
+    .btn-primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 25px rgba(0,247,255,0.5);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #00f7ff;
+      color: #00f7ff;
+      padding: 14px 36px;
+      border-radius: 50px;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+    .btn-outline:hover {
+      background: rgba(0,247,255,0.1);
+      transform: scale(1.05);
+    }
+
+    /* Team grid (flip cards) */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    .team-card {
+      perspective: 1000px;
+      height: 320px;
+    }
+    .team-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+      border-radius: 28px;
+    }
+    .team-card:hover .team-card-inner {
+      transform: rotateY(180deg);
+    }
+    .team-front, .team-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 28px;
+      background: rgba(20, 20, 30, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,247,255,0.3);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+    .team-front {
+      transform: rotateY(0deg);
+    }
+    .team-back {
+      transform: rotateY(180deg);
+      background: rgba(0,0,0,0.8);
+    }
+    .team-back .social-icons a {
+      color: #00f7ff;
+      margin: 0 8px;
+      font-size: 1.2rem;
+      transition: 0.2s;
+    }
+    .team-back .social-icons a:hover {
+      color: #a855f7;
+      transform: scale(1.2);
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 2rem;
+      margin: 3rem 0;
+    }
+    .stat-item {
+      text-align: center;
+      flex: 1;
+      min-width: 150px;
+    }
+    .stat-number {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #00f7ff;
+    }
+
+    /* Phase timeline */
+    .timeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      justify-content: center;
+    }
+    .phase-card {
+      flex: 1;
+      min-width: 220px;
+      background: rgba(20,20,30,0.5);
+      backdrop-filter: blur(8px);
+      border-radius: 24px;
+      padding: 1.8rem;
+      border-left: 4px solid #00f7ff;
+      transition: 0.3s;
+    }
+    .phase-card:hover {
+      transform: translateY(-8px);
+      background: rgba(0,247,255,0.1);
+    }
+
+    /* Rules list */
+    .rules-list li {
+      list-style: none;
+      margin: 0.8rem 0;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .rules-list li i {
+      color: #00f7ff;
+      width: 24px;
+    }
+
+    /* Footer */
+    footer {
+      background: #050507;
+      padding: 3rem 5%;
+      text-align: center;
+      border-top: 1px solid rgba(0,247,255,0.2);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      section { padding: 60px 5%; }
+      .team-grid { grid-template-columns: 1fr; }
+      .stats-grid { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loader -->
+  <div class="loader" id="loader">
+    <div class="loader-content">
+      <div class="loader-text">GigaMerge Studio</div>
+      <div style="margin-top: 20px; font-size: 0.8rem;">Initializing creative engine...</div>
+    </div>
+  </div>
+
+  <!-- 3D Canvas Background -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Custom Cursor -->
+  <div class="cursor"></div>
+  <div class="cursor-follower"></div>
+
+  <!-- Header Navigation -->
+  <header style="position: fixed; top: 0; left: 0; width: 100%; z-index: 100; padding: 1rem 5%; backdrop-filter: blur(12px); background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(0,247,255,0.2); display: flex; justify-content: space-between; align-items: center;">
+    <div style="font-size: 1.6rem; font-weight: 800; background: linear-gradient(45deg, #00f7ff, #a855f7); -webkit-background-clip: text; background-clip: text; color: transparent;">GigaMerge</div>
+    <nav>
+      <a href="#home" style="color: #fff; margin: 0 1rem; text-decoration: none;">Home</a>
+      <a href="#about" style="color: #fff; margin: 0 1rem; text-decoration: none;">About</a>
+      <a href="#team" style="color: #fff; margin: 0 1rem; text-decoration: none;">Team</a>
+      <a href="#process" style="color: #fff; margin: 0 1rem; text-decoration: none;">Process</a>
+      <a href="#growth" style="color: #fff; margin: 0 1rem; text-decoration: none;">Growth</a>
+      <a href="#contact" style="color: #fff; margin: 0 1rem; text-decoration: none;">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section id="home" style="min-height: 90vh; display: flex; align-items: center; justify-content: center; text-align: center;">
+      <div>
+        <h1 style="animation: fadeInUp 1s ease;">Where Talent Meets Opportunity</h1>
+        <p style="font-size: 1.2rem; max-width: 700px; margin: 1.5rem auto; color: #bbb;">GigaMerge Studio is a Creative Talent Marketplace + Digital Agency. We connect skilled creators with ambitious clients, managing projects from start to finish.</p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <button class="btn-primary" onclick="alert('Join our waitlist!')">Join Now →</button>
+          <button class="btn-outline" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">Explore the Vision</button>
+        </div>
+        <div style="margin-top: 3rem;">
+          <p style="font-size: 0.8rem; letter-spacing: 2px;">TRUSTED BY EMERGING BRANDS</p>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin-top: 1rem; opacity: 0.7;">
+            <span>YouTube Creators</span><span>Startups</span><span>Agencies</span><span>Brands</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Idea + Working System -->
+    <section id="about">
+      <h2>What is GigaMerge Studio?</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem;">
+        <div class="glass-card" style="flex: 1; padding: 2rem;">
+          <i class="fas fa-brain" style="font-size: 2rem; color: #00f7ff;"></i>
+          <h3 style="margin: 1rem 0;">Core Idea</h3>
+          <p>We bridge talented creators (editors, coders, writers) with clients who need work done. We manage projects, ensure quality, and handle payments — acting as a mini production company + freelance agency.</p>
+        </div>
+        <div class="glass-card" style="flex: 1; padding: 2rem;">
+          <i class="fas fa-cogs" style="font-size: 2rem; color: #00f7ff;"></i>
+          <h3 style="margin: 1rem 0;">How It Works</h3>
+          <p>Recruit → Find clients → Receive project → Assign to team → Deliver → Payment → Distribute earnings. Simple, scalable, and powered by our ecosystem.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team Section (Flip Cards) -->
+    <section id="team">
+      <h2>Our Founding Team</h2>
+      <div class="team-grid">
+        <div class="team-card"><div class="team-card-inner"><div class="team-front"><i class="fas fa-crown" style="font-size: 2rem; margin-bottom: 1rem;"></i><h3>Gautam</h3><p>Founder & Chairperson</p><p style="font-size: 0.8rem;">Vision & Strategy</p></div><div class="team-back"><p>Driving the big picture and long-term direction.</p><div class="social-icons"><a href="#"><i class="fab fa-linkedin"></i></a><a href="#"><i class="fab fa-twitter"></i></a></div></div></div></div>
+        <div class="team-card"><div class="team-card-inner"><div class="team-front"><i class="fas fa-chart-line" style="font-size: 2rem;"></i><h3>Harsh Kushwaha</h3><p>Co-founder</p><p>Strategy & Visionary</p></div><div class="team-back"><p>Architect of growth and partnerships.</p><div class="social-icons"><a href="#"><i class="fab fa-linkedin"></i></a></div></div></div></div>
+        <div class="team-card"><div class="team-card-inner"><div class="team-front"><i class="fas fa-tasks" style="font-size: 2rem;"></i><h3>Shaurya</h3><p>CEO</p><p>Daily Operations</p></div><div class="team-back"><p>Ensuring seamless execution and client satisfaction.</p><div class="social-icons"><a href="#"><i class="fab fa-linkedin"></i></a></div></div></div></div>
+        <div class="team-card"><div class="team-card-inner"><div class="team-front"><i class="fas fa-users" style="font-size: 2rem;"></i><h3>Shubham Maurya</h3><p>COO / MD</p><p>Execution & Team Management</p></div><div class="team-back"><p>Building systems that scale.</p><div class="social-icons"><a href="#"><i class="fab fa-linkedin"></i></a></div></div></div></div>
+        <div class="team-card"><div class="team-card-inner"><div class="team-front"><i class="fas fa-chart-simple" style="font-size: 2rem;"></i><h3>Shubham Gupta</h3><p>CMO</p><p>Marketing & Client Acquisition</p></div><div class="team-back"><p>Bringing brands and creators together.</p><div class="social-icons"><a href="#"><i class="fab fa-linkedin"></i></a></div></div></div></div>
+        <div class="team-card"><div class="team-card-inner"><div class="team-front"><i class="fas fa-laptop-code" style="font-size: 2rem;"></i><h3>Shubham Kushwaha</h3><p>CTO</p><p>Tech & Automation</p></div><div class="team-back"><p>Building the digital backbone.</p><div class="social-icons"><a href="#"><i class="fab fa-linkedin"></i></a></div></div></div></div>
+      </div>
+    </section>
+
+    <!-- Revenue Model + Stats -->
+    <section>
+      <h2>Revenue Model</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
+        <div class="glass-card" style="flex: 1; padding: 2rem;">
+          <i class="fas fa-percent" style="font-size: 2rem; color: #00f7ff;"></i>
+          <h3>Commission Model</h3>
+          <p>Client pays ₹5000 → Editor gets ₹4000-4200 → We keep ₹800-1000. Simple and scalable.</p>
+        </div>
+        <div class="glass-card" style="flex: 1; padding: 2rem;">
+          <i class="fas fa-calendar-alt" style="font-size: 2rem; color: #00f7ff;"></i>
+          <h3>Subscription (Future)</h3>
+          <p>Creators pay monthly to access premium clients and features.</p>
+        </div>
+        <div class="glass-card" style="flex: 1; padding: 2rem;">
+          <i class="fas fa-bolt" style="font-size: 2rem; color: #00f7ff;"></i>
+          <h3>Premium Services</h3>
+          <p>Fast delivery, high-quality editing, dedicated teams for high-paying clients.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Growth Strategy (Phase Timeline) -->
+    <section id="growth">
+      <h2>Growth Strategy</h2>
+      <div class="timeline">
+        <div class="phase-card"><h3>Phase 1</h3><p><strong>0-1 Month</strong><br>Build team (20–50 creators), start Instagram, get first 5–10 clients.</p></div>
+        <div class="phase-card"><h3>Phase 2</h3><p><strong>1-3 Months</strong><br>Regular client base, improve quality, organize team.</p></div>
+        <div class="phase-card"><h3>Phase 3</h3><p><strong>3-6 Months</strong><br>Launch website, portfolio system, brand identity.</p></div>
+        <div class="phase-card"><h3>Phase 4</h3><p><strong>Future</strong><br>Launch app, freelance marketplace, AI tools.</p></div>
+      </div>
+    </section>
+
+    <!-- Client Acquisition & Rules -->
+    <section style="display: flex; flex-wrap: wrap; gap: 3rem;">
+      <div style="flex: 1;">
+        <h2>Client Acquisition</h2>
+        <div class="glass-card" style="padding: 1.8rem;">
+          <p><i class="fas fa-bullseye"></i> Target: YouTubers (10K–100K), small businesses, content creators.</p>
+          <p><i class="fas fa-envelope"></i> Methods: Instagram DMs, cold emails, LinkedIn outreach.</p>
+          <p><i class="fas fa-chart-line"></i> Consistency = clients.</p>
+        </div>
+      </div>
+      <div style="flex: 1;">
+        <h2>Rules That Protect</h2>
+        <ul class="rules-list glass-card" style="padding: 1.8rem; list-style: none;">
+          <li><i class="fas fa-handshake"></i> No direct client dealing</li>
+          <li><i class="fas fa-file-signature"></i> Agreement is mandatory</li>
+          <li><i class="fas fa-money-bill-wave"></i> Payment before work</li>
+          <li><i class="fas fa-check-circle"></i> Maintain quality</li>
+          <li><i class="fas fa-sitemap"></i> Respect hierarchy</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Automation & Future -->
+    <section>
+      <h2>Automation & Systems</h2>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="stat-number" data-target="100">0</div><p>Auto DM Replies</p></div>
+        <div class="stat-item"><div class="stat-number" data-target="500">0</div><p>Creator Database</p></div>
+        <div class="stat-item"><div class="stat-number" data-target="1000">0</div><p>Projects Tracked</p></div>
+      </div>
+      <div style="margin-top: 2rem; text-align: center;">
+        <p>🔧 Systems = less manual work. We use Google Forms, Sheets, project tracking, and auto-responders to scale.</p>
+      </div>
+    </section>
+
+    <!-- Expansion Ideas -->
+    <section>
+      <h2>Future Vision</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
+        <span class="glass-card" style="padding: 0.8rem 1.5rem;">🎓 Editing Academy</span>
+        <span class="glass-card" style="padding: 0.8rem 1.5rem;">📚 Paid Courses</span>
+        <span class="glass-card" style="padding: 0.8rem 1.5rem;">👥 Creator Community</span>
+        <span class="glass-card" style="padding: 0.8rem 1.5rem;">🤖 AI Tools for Creators</span>
+        <span class="glass-card" style="padding: 0.8rem 1.5rem;">📱 SaaS Platform</span>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section id="contact" style="text-align: center;">
+      <h2>Ready to Merge Your Talent?</h2>
+      <p style="margin-bottom: 2rem;">Join the movement. Become a creator, find work, or partner with us.</p>
+      <div style="display: flex; gap: 1.5rem; justify-content: center;">
+        <button class="btn-primary" onclick="alert('Apply form coming soon!')">Apply as Creator</button>
+        <button class="btn-outline" onclick="alert('Client inquiry form coming soon!')">Hire Talent</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 GigaMerge Studio — The Creative Talent Ecosystem</p>
+    <p style="font-size: 0.8rem; margin-top: 1rem;">Where talent meets opportunity</p>
+  </footer>
+
+  <script>
+    // Loader
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('loader').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loader').style.display = 'none';
+        }, 1000);
+      }, 1500);
+    });
+
+    // Custom Cursor
+    const cursor = document.querySelector('.cursor');
+    const follower = document.querySelector('.cursor-follower');
+    document.addEventListener('mousemove', (e) => {
+      gsap.to(cursor, { duration: 0.1, x: e.clientX, y: e.clientY });
+      gsap.to(follower, { duration: 0.2, x: e.clientX, y: e.clientY });
+    });
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '40px';
+        cursor.style.height = '40px';
+        follower.style.opacity = '0';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '20px';
+        cursor.style.height = '20px';
+        follower.style.opacity = '1';
+      });
+    });
+
+    // GSAP Scroll Animations
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('.glass-card, .phase-card, .team-card, .stat-item').forEach(el => {
+      gsap.from(el, {
+        scrollTrigger: {
+          trigger: el,
+          start: 'top 85%',
+          toggleActions: 'play none none reverse'
+        },
+        y: 50,
+        opacity: 0,
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    });
+
+    // Animated counters
+    const counters = document.querySelectorAll('.stat-number');
+    counters.forEach(counter => {
+      const target = parseInt(counter.getAttribute('data-target'));
+      let current = 0;
+      const updateCounter = () => {
+        if (current < target) {
+          current += Math.ceil(target / 50);
+          if (current > target) current = target;
+          counter.innerText = current;
+          requestAnimationFrame(updateCounter);
+        }
+      };
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            updateCounter();
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.5 });
+      observer.observe(counter);
+    });
+
+    // Three.js Background
+    const canvas = document.getElementById('bg-canvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x0a0a0f, 0);
+
+    // Particle system
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = 1500;
+    const posArray = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount * 3; i += 3) {
+      posArray[i] = (Math.random() - 0.5) * 200;
+      posArray[i+1] = (Math.random() - 0.5) * 100;
+      posArray[i+2] = (Math.random() - 0.5) * 100 - 50;
+    }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particlesMaterial = new THREE.PointsMaterial({
+      color: 0x00f7ff,
+      size: 0.15,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending
+    });
+    const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particleSystem);
+
+    // Additional floating spheres
+    const sphereGeo = new THREE.SphereGeometry(1.2, 32, 32);
+    const sphereMat = new THREE.MeshStandardMaterial({ color: 0x00f7ff, emissive: 0x00f7ff, emissiveIntensity: 0.2, wireframe: true });
+    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere.position.set(5, 3, -15);
+    scene.add(sphere);
+
+    const sphere2 = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere2.position.set(-6, -2, -20);
+    sphere2.scale.set(0.8, 0.8, 0.8);
+    scene.add(sphere2);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x404060);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0x00f7ff, 0.8);
+    pointLight.position.set(10, 20, 10);
+    scene.add(pointLight);
+
+    camera.position.z = 30;
+    camera.position.y = 2;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      particleSystem.rotation.y += 0.0005;
+      particleSystem.rotation.x += 0.0003;
+      sphere.rotation.x += 0.005;
+      sphere.rotation.y += 0.007;
+      sphere2.rotation.x -= 0.003;
+      sphere2.rotation.y += 0.004;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
